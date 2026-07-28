@@ -81,11 +81,11 @@
         .color-6 { background-color: #F0E68C; }
         
         .form-section {
-            text-align: center;
-            padding: 30px;
-            background: white;
-            border-radius: 8px;
-        }
+    text-align: center;
+    padding: 30px;
+    background: transparent;
+    border-radius: 8px;
+    }
 
         .form-section p {
     font-family: 'Quicksand', sans-serif;
@@ -94,20 +94,33 @@
     color: #333;
     }
         
-        .form-section a {
-            display: inline-block;
-            margin-top: 15px;
-            padding: 12px 30px;
-            background-color: #4CAF50;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-        
-        .form-section a:hover {
-            background-color: #45a049;
-        }
+      .form-section a {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 16px 50px;
+    background: #000;
+    color: white;
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: 600;
+    font-family: 'Poppins', sans-serif;
+    font-size: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.form-section a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.form-section a:disabled {
+    background: #999;
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+}
     </style>
 </head>
 <body>
@@ -115,15 +128,14 @@
         <h1>PULSE</h1>
         <div id="board" class="board"></div>
         <div class="form-section">
-            <p>Add your post</p>
-            <a href="https://docs.google.com/forms/d/e/1FAIpQLSeZ8k4KZPc-_dIpHvdgE5tvXzER9TnOyZrSIm7SEY1czF866A/viewform?usp=sharing&ouid=116121766711872800302" target="_blank">Share what's on your mind</a>
-        </div>
-    </div>
+    <p style="font-size: 12px; color: #666; margin-bottom: 10px;">You can post once per 24 hours</p>
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSeZ8k4KZPc-_dIpHvdgE5tvXzER9TnOyZrSIm7SEY1czF866A/viewform?usp=dialog" target="_blank" onclick="handleFormSubmit()">Share what's on your mind</a>
+    <p id="postLimitMessage" style="margin-top: 10px; font-size: 12px; color: #999;"></p>
+</div>
 
-    <script>
-        // YOUR SHEET ID HERE - Replace with your actual Sheet ID
-       // Replace with your published CSV link from Step 1
-    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRI7vOPks6X2j02rFafvO5XJDxIlJx5uHNxY1iItDycxisdamNEEEQNqLAsEfCR9EnXwePPk2tPT6lt/pub?output=csv';
+   <script>
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRI7vOPks6X2j02rFafvO5XJDxIlJx5uHNxY1iItDycxisdamNEEEQNqLAsEfCR9EnXwePPk2tPT6lt/pub?output=csv'+ '&t=' + new Date().getTime();
+    const FORM_LINK = 'https://docs.google.com/forms/d/e/1FAIpQLSeZ8k4KZPc-_dIpHvdgE5tvXzER9TnOyZrSIm7SEY1czF866A/viewform?usp=dialog';
     
     async function fetchPosts() {
         try {
@@ -134,25 +146,83 @@
             const board = document.getElementById('board');
             board.innerHTML = '';
             
-            // Start from row 1 (skip header)
             for (let i = 1; i < rows.length; i++) {
-                const cells = rows[i].split(',');
-                const post = cells[1]; // Column B (the post)
-                
-                if (post && post.trim()) {
-                    const note = document.createElement('div');
-                    note.className = `sticky-note color-${(i % 6) + 1}`;
-                    note.textContent = post.replace(/"/g, '');
-                    board.appendChild(note);
-                }
-            }
+    // Handle CSV with quoted fields properly
+    const cells = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let j = 0; j < rows[i].length; j++) {
+        const char = rows[i][j];
+        if (char === '"') {
+            inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+            cells.push(current);
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    cells.push(current);
+    
+    const post = cells[1];
+    
+    if (post && post.trim()) {
+        const note = document.createElement('div');
+        note.className = `sticky-note color-${(i % 6) + 1}`;
+        note.textContent = post.replace(/"/g, '').trim();
+        board.appendChild(note);
+    }
+}
         } catch (error) {
             console.error('Error fetching data:', error);
         }
     }
     
+    // Check if user can post
+    function checkPostLimit() {
+        const lastPostTime = localStorage.getItem('pulseLastPost');
+        const now = Date.now();
+        const button = document.querySelector('.form-section a');
+        const messageEl = document.getElementById('postLimitMessage');
+        
+        if (lastPostTime) {
+            const hoursPassed = (now - parseInt(lastPostTime)) / (1000 * 60 * 60);
+            
+            if (hoursPassed < 24) {
+                const hoursLeft = Math.ceil(24 - hoursPassed);
+                button.style.pointerEvents = 'none';
+                button.style.opacity = '0.6';
+                
+                if (messageEl) {
+                    messageEl.textContent = `You can post again in ${hoursLeft} hour${hoursLeft !== 1 ? 's' : ''}`;
+                }
+            } else {
+                button.style.pointerEvents = 'auto';
+                button.style.opacity = '1';
+                if (messageEl) {
+                    messageEl.textContent = '';
+                }
+            }
+        }
+    }
+    
+    // When form is submitted, save timestamp
+    function handleFormSubmit() {
+        localStorage.setItem('pulseLastPost', Date.now().toString());
+        checkPostLimit();
+    }
+    
+    // Check limit when page loads
+    checkPostLimit();
+    
+    // Fetch posts every 10 seconds
     fetchPosts();
     setInterval(fetchPosts, 10000);
+    
+    // Update post limit display every minute
+    setInterval(checkPostLimit, 60000);
     </script>
+
 </body>
 </html>
