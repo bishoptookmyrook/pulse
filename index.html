@@ -4,18 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pulse</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Playfair+Display:wght@700&family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
-        body {
-            background-color: #f5f5f5;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            padding: 20px;
-        }
+      body {
+    background-color: #f5f5f5;
+    font-family: -apple-system, BlinkMacSystemFont, 'Bebas Neue', Roboto, sans-serif;
+    padding: 20px;
+}
         
         .container {
             max-width: 1200px;
@@ -23,35 +25,53 @@
         }
         
         h1 {
-            text-align: center;
-            margin-bottom: 30px;
-            color: #333;
-        }
+    text-align: center;
+    margin-bottom: 30px;
+    color: #333;
+    font-family: 'Playfair Display', serif;
+    font-size: 48px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    }
         
         .board {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
-        }
-        
-        .sticky-note {
-            padding: 20px;
-            border-radius: 4px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            font-size: 14px;
-            line-height: 1.5;
-            word-wrap: break-word;
-            transform: rotate(-2deg);
-        }
-        
-        .sticky-note:nth-child(2n) {
-            transform: rotate(2deg);
-        }
-        
-        .sticky-note:nth-child(3n) {
-            transform: rotate(-1deg);
-        }
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 180px));
+    gap: 20px;
+    margin-bottom: 40px;
+    justify-content: start;
+}
+
+.sticky-note {
+    width: 180px;
+    height: 180px;
+    padding: 15px;
+    border-radius: 2px;
+    font-size: 14px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    font-family: 'Caveat', cursive;
+    transform: rotate(-2deg);
+    box-shadow: 
+        0 4px 8px rgba(0,0,0,0.15),
+        0 8px 16px rgba(0,0,0,0.1);
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    overflow: hidden;
+}
+
+.sticky-note:nth-child(2n) {
+    transform: rotate(2deg);
+}
+
+.sticky-note:nth-child(3n) {
+    transform: rotate(-1deg);
+}
+
+.sticky-note:nth-child(4n) {
+    transform: rotate(1.5deg);
+}
         
         .color-1 { background-color: #FFE4B5; }
         .color-2 { background-color: #FFB6C1; }
@@ -66,6 +86,13 @@
             background: white;
             border-radius: 8px;
         }
+
+        .form-section p {
+    font-family: 'Quicksand', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    }
         
         .form-section a {
             display: inline-block;
