@@ -121,9 +121,77 @@
     cursor: not-allowed;
     transform: none;
 }
+
+/* Welcome Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 30px;
+    border: 1px solid #888;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.modal-content h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 32px;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.modal-content p {
+    font-family: 'Poppins', sans-serif;
+    font-size: 14px;
+    line-height: 1.8;
+    color: #666;
+    margin-bottom: 15px;
+}
+
+.modal-content button {
+    padding: 12px 40px;
+    background: #000;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.3s ease;
+}
+
+.modal-content button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
     </style>
 </head>
 <body>
+    <div id="welcomeModal" class="modal">
+    <div class="modal-content">
+        <h2>Pulse</h2>
+        <p><strong>An anonymous thought board.</strong></p>
+        <p>Post once per 24 hours. Share what's on your mind.</p>
+        <p><strong>No comments. No judgment.</strong></p>
+        <p>Just a board of sticky notes.</p>
+        <button onclick="closeWelcome()">Got it</button>
+    </div>
+</div>
     <div class="container">
         <h1>PULSE</h1>
         <div id="board" class="board"></div>
@@ -134,94 +202,127 @@
 </div>
 
    <script>
-    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRI7vOPks6X2j02rFafvO5XJDxIlJx5uHNxY1iItDycxisdamNEEEQNqLAsEfCR9EnXwePPk2tPT6lt/pub?output=csv'+ '&t=' + new Date().getTime();
-    const FORM_LINK = 'https://docs.google.com/forms/d/e/1FAIpQLSeZ8k4KZPc-_dIpHvdgE5tvXzER9TnOyZrSIm7SEY1czF866A/viewform?usp=dialog';
-    
-    async function fetchPosts() {
-        try {
-            const response = await fetch(CSV_URL);
-            const text = await response.text();
-            const rows = text.split('\n');
-            
-            const board = document.getElementById('board');
-            board.innerHTML = '';
-            
-            for (let i = 1; i < rows.length; i++) {
-    // Handle CSV with quoted fields properly
-    const cells = [];
-    let current = '';
-    let inQuotes = false;
-    
-    for (let j = 0; j < rows[i].length; j++) {
-        const char = rows[i][j];
-        if (char === '"') {
-            inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-            cells.push(current);
-            current = '';
-        } else {
-            current += char;
-        }
-    }
-    cells.push(current);
-    
-    const post = cells[1];
-    
-    if (post && post.trim()) {
-        const note = document.createElement('div');
-        note.className = `sticky-note color-${(i % 6) + 1}`;
-        note.textContent = post.replace(/"/g, '').trim();
-        board.appendChild(note);
+    const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRI7vOPks6X2j02rFafvO5XJDxIlJx5uHNxY1iItDycxisdamNEEEQNqLAsEfCR9EnXwePPk2tPT6lt/pub?output=csv' + '&t=' + new Date().getTime();
+
+// Profanity list (basic)
+const profanities = [
+    'shit', 'fuck', 'damn', 'crap', 'ass', 'bitch', 'bastard', 'dick', 'pussy', 'cock',
+    'hell', 'piss', 'bollocks', 'arsehole', 'wanker', 'twat', 'slut', 'whore', 'nigger'
+];
+
+// Censor a string
+function censorProfanity(text) {
+    let censored = text;
+    profanities.forEach(word => {
+        const regex = new RegExp('\\b' + word + '\\b', 'gi');
+        censored = censored.replace(regex, '*'.repeat(word.length));
+    });
+    return censored;
+}
+
+// Welcome modal
+function showWelcome() {
+    const seen = localStorage.getItem('pulseWelcomeSeen');
+    if (!seen) {
+        document.getElementById('welcomeModal').style.display = 'block';
     }
 }
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        }
+
+function closeWelcome() {
+    document.getElementById('welcomeModal').style.display = 'none';
+    localStorage.setItem('pulseWelcomeSeen', 'true');
+}
+
+// Close modal if clicking outside it
+window.onclick = function(event) {
+    const modal = document.getElementById('welcomeModal');
+    if (event.target === modal) {
+        closeWelcome();
     }
-    
-    // Check if user can post
-    function checkPostLimit() {
-        const lastPostTime = localStorage.getItem('pulseLastPost');
-        const now = Date.now();
-        const button = document.querySelector('.form-section a');
-        const messageEl = document.getElementById('postLimitMessage');
+}
+
+async function fetchPosts() {
+    try {
+        const response = await fetch(CSV_URL);
+        const text = await response.text();
+        const rows = text.split('\n');
         
-        if (lastPostTime) {
-            const hoursPassed = (now - parseInt(lastPostTime)) / (1000 * 60 * 60);
+        const board = document.getElementById('board');
+        board.innerHTML = '';
+        
+        for (let i = 1; i < rows.length; i++) {
+            const cells = [];
+            let current = '';
+            let inQuotes = false;
             
-            if (hoursPassed < 24) {
-                const hoursLeft = Math.ceil(24 - hoursPassed);
-                button.style.pointerEvents = 'none';
-                button.style.opacity = '0.6';
+            for (let j = 0; j < rows[i].length; j++) {
+                const char = rows[i][j];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    cells.push(current);
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            cells.push(current);
+            
+            let post = cells[1];
+            
+            if (post && post.trim()) {
+                post = post.replace(/"/g, '').trim();
+                post = censorProfanity(post); // Apply profanity filter
                 
-                if (messageEl) {
-                    messageEl.textContent = `You can post again in ${hoursLeft} hour${hoursLeft !== 1 ? 's' : ''}`;
-                }
-            } else {
-                button.style.pointerEvents = 'auto';
-                button.style.opacity = '1';
-                if (messageEl) {
-                    messageEl.textContent = '';
-                }
+                const note = document.createElement('div');
+                note.className = `sticky-note color-${(i % 6) + 1}`;
+                note.textContent = post;
+                board.appendChild(note);
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching data:', error);
+    }
+}
+
+function checkPostLimit() {
+    const lastPostTime = localStorage.getItem('pulseLastPost');
+    const now = Date.now();
+    const button = document.querySelector('.form-section a');
+    const messageEl = document.getElementById('postLimitMessage');
+    
+    if (lastPostTime) {
+        const hoursPassed = (now - parseInt(lastPostTime)) / (1000 * 60 * 60);
+        
+        if (hoursPassed < 24) {
+            const hoursLeft = Math.ceil(24 - hoursPassed);
+            button.style.pointerEvents = 'none';
+            button.style.opacity = '0.6';
+            
+            if (messageEl) {
+                messageEl.textContent = `You can post again in ${hoursLeft} hour${hoursLeft !== 1 ? 's' : ''}`;
+            }
+        } else {
+            button.style.pointerEvents = 'auto';
+            button.style.opacity = '1';
+            if (messageEl) {
+                messageEl.textContent = '';
             }
         }
     }
-    
-    // When form is submitted, save timestamp
-    function handleFormSubmit() {
-        localStorage.setItem('pulseLastPost', Date.now().toString());
-        checkPostLimit();
-    }
-    
-    // Check limit when page loads
+}
+
+function handleFormSubmit() {
+    localStorage.setItem('pulseLastPost', Date.now().toString());
     checkPostLimit();
-    
-    // Fetch posts every 10 seconds
-    fetchPosts();
-    setInterval(fetchPosts, 10000);
-    
-    // Update post limit display every minute
-    setInterval(checkPostLimit, 60000);
+}
+
+// Initialize on page load
+showWelcome();
+checkPostLimit();
+fetchPosts();
+setInterval(fetchPosts, 10000);
+setInterval(checkPostLimit, 60000);
     </script>
 
 </body>
